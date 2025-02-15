@@ -1,79 +1,86 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./Todo.css";
 import TodoItems from "./Todoitems";
+
 const Todo = () => {
   const inputRef = useRef("");
   const todo_data = localStorage.getItem("todoData")
     ? JSON.parse(localStorage.getItem("todoData"))
     : [];
   const [todoText, setTodoText] = useState(todo_data);
-  const add = () => {
+  const [editId, setEditId] = useState(null);
+
+  const addOrUpdateTask = () => {
     const text = inputRef.current.value.trim();
-    if (inputRef.current.value === "") {
-      return alert("please enter task");
+    if (text === "") {
+      return alert("Please enter a task");
     }
-    const data = {
-      id: Date.now(),
-      text: text,
-      isComplete: false,
-    };
-    setTodoText((prev) => [...prev, data]);
+
+    if (editId) {
+      setTodoText((prev) =>
+        prev.map((item) => (item.id === editId ? { ...item, text } : item))
+      );
+      setEditId(null);
+    } else {
+      const data = {
+        id: Date.now(),
+        text: text,
+        isComplete: false,
+      };
+      setTodoText((prev) => [...prev, data]);
+    }
+
     inputRef.current.value = "";
   };
+
   const del = (id) => {
-    setTodoText((prev) => {
-      return prev.filter((item) => item.id !== id);
-    });
+    setTodoText((prev) => prev.filter((item) => item.id !== id));
   };
+
   const toggle = (id) => {
-    setTodoText((prev) => {
-      return prev.map((item) => {
-        if (item.id === id) {
-          return { ...item, isComplete: !item.isComplete };
-        }
-        return item;
-      });
-    });
+    setTodoText((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, isComplete: !item.isComplete } : item
+      )
+    );
   };
+
+  const edit = (id, text) => {
+    setEditId(id);
+    inputRef.current.value = text;
+  };
+
   useEffect(() => {
     localStorage.setItem("todoData", JSON.stringify(todoText));
   }, [todoText]);
+
   return (
-    <>
-      <div className="wrapper">
-        <div className="container">
-          <h1>Todo list</h1>
-          <div className="todo">
-            <div className="header">
-              <input
-                ref={inputRef}
-                className="text"
-                type="text"
-                name=""
-                id=""
+    <div className="wrapper">
+      <div className="container">
+        <h1>Todo List</h1>
+        <div className="todo">
+          <div className="header">
+            <input ref={inputRef} className="text" type="text" />
+            <button onClick={addOrUpdateTask} className="addBtn">
+              {editId ? "Update Task" : "Add Task"}
+            </button>
+          </div>
+          <div className="task">
+            {todoText.map((item) => (
+              <TodoItems
+                key={item.id}
+                id={item.id}
+                isComplete={item.isComplete}
+                text={item.text}
+                deleteTodo={del}
+                toggle={toggle}
+                edit={edit}
               />
-              <button onClick={add} className="addBtn">
-                Add Task
-              </button>
-            </div>
-            <div className="task">
-              {todoText.map((item, index) => {
-                return (
-                  <TodoItems
-                    key={index}
-                    isComplete={item.isComplete}
-                    text={item.text}
-                    deleteTodo={del}
-                    id={item.id}
-                    toggle={toggle}
-                  />
-                );
-              })}
-            </div>
+            ))}
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
